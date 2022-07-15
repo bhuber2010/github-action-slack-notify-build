@@ -4,6 +4,9 @@ branding:
   icon: message-square
   color: orange
 inputs:
+  app_name:
+    description: 'Use provided app name in place of repo name for monorepos.'
+    required: false
   channel:
     description: 'The Slack channel name. Required if no `channel_id` provided.'
     required: false

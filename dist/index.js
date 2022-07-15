@@ -1147,6 +1147,7 @@ const { buildSlackAttachments, formatChannelName } = __webpack_require__(543);
     const channel = core.getInput('channel');
     const status = core.getInput('status');
     const color = core.getInput('color');
+    const appName = core.getInput('app_name');
     const messageId = core.getInput('message_id');
     const token = process.env.SLACK_BOT_TOKEN;
     const slack = new WebClient(token);
@@ -1156,7 +1157,7 @@ const { buildSlackAttachments, formatChannelName } = __webpack_require__(543);
       return;
     }
 
-    const attachments = buildSlackAttachments({ status, color, github });
+    const attachments = buildSlackAttachments({ status, color, appName, github });
     const channelId = core.getInput('channel_id') || (await lookUpChannelId({ slack, channel }));
 
     if (!channelId) {
@@ -10877,15 +10878,27 @@ function hasFirstPage (link) {
 
 const { context } = __webpack_require__(469);
 
-function buildSlackAttachments({ status, color, github }) {
+function buildSlackAttachments({ status, color, appName, github }) {
   const { payload, ref, workflow, eventName } = github.context;
   const { owner, repo } = context.repo;
   const event = eventName;
   const branch = event === 'pull_request' ? payload.pull_request.head.ref : ref.replace('refs/heads/', '');
-  const environment = ['main', 'master'].includes(branch) ? 'PROD' : 'DEV'
+  const environment = ['main', 'master'].includes(branch) ? 'PROD' : 'DEV';
 
   const sha = event === 'pull_request' ? payload.pull_request.head.sha : github.context.sha;
   const runId = parseInt(process.env.GITHUB_RUN_ID, 10);
+
+  const deployItem = appName
+    ? {
+        title: 'App',
+        value: appName,
+        short: true,
+      }
+    : {
+        title: 'Repo',
+        value: `<https://github.com/${owner}/${repo} | ${owner}/${repo}>`,
+        short: true,
+      };
 
   const referenceLink =
     event === 'pull_request'
@@ -10904,15 +10917,11 @@ function buildSlackAttachments({ status, color, github }) {
     {
       color,
       fields: [
-        {
-          title: 'Repo',
-          value: `<https://github.com/${owner}/${repo} | ${owner}/${repo}>`,
-          short: true,
-        },
+        deployItem,
         {
           title: 'Environment',
           value: environment,
-          short: true
+          short: true,
         },
         {
           title: 'Status',
